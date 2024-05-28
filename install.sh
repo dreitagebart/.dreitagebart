@@ -323,11 +323,11 @@ function get_backup_path() {
 }
 
 print_dreitagebart
-# get_timestamp
-# install_homebrew
-# install_shell_components
-# stow_zshrc
-# stow_tmux
-# stow_git
+get_timestamp
+install_homebrew
+install_shell_components
+stow_zshrc
+stow_tmux
+stow_git
 stow_nvim
 show_final_message

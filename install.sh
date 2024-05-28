@@ -129,6 +129,39 @@ function stow_git() {
   stow git
 }
 
+function stow_nvim() {
+  # Check if ~/.config/nvim already exists
+  local valid_option=false
+  local backup_path="$(get_backup_path ".config/nvim")"
+
+  while [ $valid_option = false ]; do
+    if [ -d "$HOME/.config/nvim" ]; then
+      echo "$(colorize $COLOR_CYAN "~/.config/nvim") already exists. Should I make a backup?"  
+      read -p "Otherwise the folder gets overwritten. (y/n) " choice
+       case $choice in
+        y) 
+          echo "$(colorize $COLOR_CYAN "~/.config/nvim") moved to folder $(colorize $COLOR_CYAN "~/.dreitagebart/backups/$TIMESTAMP/.config/nvim")"
+          mkdir -p $backup_path
+          mv ~/.config/nvim $backup_path
+          # cp -L ~/.config/nvim $backup_path
+          valid_option=true
+          break;;
+        n) 
+          echo "No backup for tmux plugins. Folder will be deleted..."
+          rm -rf ~/.tmux/plugins
+          valid_option=true
+          break;;
+        *) 
+          echo ""
+      esac
+    else
+      break
+    fi
+  done
+
+  stow nvim
+}
+
 function stow_tmux() {
   # Check if ~/.tmux.conf already exists
   local valid_option=false
@@ -296,4 +329,5 @@ print_dreitagebart
 # stow_zshrc
 # stow_tmux
 # stow_git
+stow_nvim
 show_final_message

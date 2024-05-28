@@ -18,6 +18,8 @@ function install_homebrew() {
 
     # install homebrew with official curl command - see https://brew.sh
     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+    homebrew_post_installation_steps
   fi
 
   echo ""
@@ -320,6 +322,35 @@ function get_backup_path() {
   local path="$HOME/.dreitagebart/backups/$TIMESTAMP/$1"
 
   echo "$path"
+}
+
+function homebrew_post_installation_steps() {
+  local shell_rcfile=""
+
+  case "${SHELL}" in
+    */bash*)
+      if [[ -n "${HOMEBREW_ON_LINUX-}" ]]; then
+        shell_rcfile="${HOME}/.bashrc"
+      else
+        shell_rcfile="${HOME}/.bash_profile"
+      fi
+      ;;
+    */zsh*)
+      if [[ -n "${HOMEBREW_ON_LINUX-}" ]]; then
+        shell_rcfile="${ZDOTDIR:-"${HOME}"}/.zshrc"
+      else
+        shell_rcfile="${ZDOTDIR:-"${HOME}"}/.zprofile"
+      fi
+      ;;
+    */fish*)
+      shell_rcfile="${HOME}/.config/fish/config.fish"
+      ;;
+    *)
+      shell_rcfile="${ENV:-"${HOME}/.profile"}"
+      ;;
+  esac
+
+  eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 }
 
 print_dreitagebart

@@ -1,15 +1,85 @@
-# If you come from bash you might have to change your $PATH.
-# export PATH=$HOME/bin:/usr/local/bin:$PATH
+# Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
+# Initialization code that may require console input (password prompts, [y/n]
+# confirmations, etc.) must go above this block; everything else may go below.
+if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
+  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+fi
+
+# modify path variables
+export PATH="$HOME/bin:/usr/local/bin:$PATH"
+
+# setup GO binary location
 export PATH="$PATH:/usr/local/go/bin"
 
+# define zinit location directory
+ZINIT_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}/zinit/zinit.git"
+
+# zinit does not exist -> create it
+[ ! -d $ZINIT_HOME ] && mkdir -p "$(dirname $ZINIT_HOME)"
+[ ! -d $ZINIT_HOME/.git ] && git clone https://github.com/zdharma-continuum/zinit.git "$ZINIT_HOME"
+
+# source / load zinit
+source "${ZINIT_HOME}/zinit.zsh"
+
+# load zsh plugins with zinit
+zinit ice depth=1; zinit light romkatv/powerlevel10k
+zinit light zsh-users/zsh-syntax-highlighting
+zinit light zsh-users/zsh-completions
+zinit light zsh-users/zsh-autosuggestions
+zinit light Aloxaf/fzf-tab
+
+# load zsh plugins migrated from oh-my-zsh
+zinit snippet OMZP::git
+zinit snippet OMZP::sudo
+zinit snippet OMZP::archlinux
+zinit snippet OMZP::dnf
+zinit snippet OMZP::golang
+zinit snippet OMZP::kubectl
+zinit snippet OMZP::command-not-found
+
+# load completions
+autoload -Uz _zinit
+(( ${+_comps} )) && _comps[zinit]=_zinit
+
+# to customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
+[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
+
+# custom keybindings
+bindkey -e
+bindkey '^p' history-search-backward
+bindkey '^n' history-search-forward
+bindkey '^[w' kill-region
+
+zle_highlight+=(paste:none)
+
+# history settings
+HISTSIZE=5000
+HISTFILE=~/.zsh_history
+SAVEHIST=$HISTSIZE
+HISTDUP=erase
+setopt appendhistory
+setopt sharehistory
+setopt hist_ignore_space
+setopt hist_ignore_all_dups
+setopt hist_save_no_dups
+setopt hist_ignore_dups
+setopt hist_find_no_dups
+
+# completion styling
+zstyle ':completion:*' matcher-list 'm:{a-z}={A-Za-z}'
+zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
+zstyle ':completion:*' menu no
+zstyle ':fzf-tab:complete:cd:*' fzf-preview 'ls --color $realpath'
+zstyle ':fzf-tab:complete:__zoxide_z:*' fzf-preview 'ls --color $realpath'
+
 # Path to your oh-my-zsh installation.
-export ZSH="$HOME/.oh-my-zsh"
-export EDITOR="/usr/bin/nvim"
+# export ZSH="$HOME/.oh-my-zsh"
+# export EDITOR="/usr/bin/nvim"
 # Set name of the theme to load --- if set to "random", it will
 # load a random theme each time oh-my-zsh is loaded, in which case,
 # to know which specific one was loaded, run: echo $RANDOM_THEME
 # See https://github.com/ohmyzsh/ohmyzsh/wiki/Themes
-ZSH_THEME="agnoster"
+# ZSH_THEME="agnoster"
 
 # Set list of themes to pick from when loading at random
 # Setting this variable when ZSH_THEME=random will cause zsh to load
@@ -71,12 +141,12 @@ ZSH_THEME="agnoster"
 # Custom plugins may be added to $ZSH_CUSTOM/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
 # Add wisely, as too many plugins slow down shell startup.
-plugins=(
-  git 
-  zsh-autosuggestions
-)
+# plugins=(
+#   git 
+#   zsh-autosuggestions
+# )
 
-source "$ZSH/oh-my-zsh.sh"
+# source "$ZSH/oh-my-zsh.sh"
 
 # User configuration
 
@@ -100,7 +170,7 @@ export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
 
 ### MANAGED BY RANCHER DESKTOP START (DO NOT EDIT)
-export PATH="/home/dreitagebart/.rd/bin:$PATH"
+# export PATH="/home/dreitagebart/.rd/bin:$PATH"
 ### MANAGED BY RANCHER DESKTOP END (DO NOT EDIT)
 
 # Set personal aliases, overriding those provided by oh-my-zsh libs,
@@ -110,15 +180,11 @@ export PATH="/home/dreitagebart/.rd/bin:$PATH"
 #
 # Example aliases
 alias zshconfig="nvim ~/.zshrc"
-alias ohmyzsh="nvim ~/.oh-my-zsh"
 alias ls="eza --all --color=always --color-scale-mode=gradient --color-scale=size --long --git --icons=always"
 alias up="z .."
 alias dev="z ~/dev"
 alias dotfiles="git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME"
-alias fedora-server="ssh dreitagebart@fedora.home"
-alias dreitagebot="ssh dreitagebart@192.168.178.24"
 alias vim="nvim"
-alias docker-compose="docker compose"
 
 # pnpm
 export PNPM_HOME="/home/dreitagebart/.local/share/pnpm"
@@ -168,3 +234,6 @@ _fzf_comprun() {
 }
 
 eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+
+# To customize prompt, run `p10k configure` or edit ~/.dreitagebart/p10k/.p10k.zsh.
+[[ ! -f ~/.dreitagebart/p10k/.p10k.zsh ]] || source ~/.dreitagebart/p10k/.p10k.zsh

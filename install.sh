@@ -67,6 +67,8 @@ function show_spinner() {
     printf "\b%c" "${spinner:i++%4:1}"
     sleep 0.1
   done
+
+  echo ""
 }
 
 function stow_zshrc() {
@@ -98,6 +100,7 @@ function stow_zshrc() {
   done
 
   stow zsh
+  echo ""
 }
 
 function stow_git() {
@@ -129,6 +132,39 @@ function stow_git() {
   done
 
   stow git
+  echo ""
+}
+
+function stow_p10k() {
+  # Check if ~/.p10k.zsh already exists
+  local valid_option=false
+  local backup_path="$(get_backup_path)"
+
+  while [ $valid_option = false ]; do
+    if [ -f "$HOME/.p10k.zsh" ]; then
+      echo "$(colorize $COLOR_CYAN "~/.p10k.zsh") already exists. Should I make a backup?"  
+      read -p "Otherwise the file gets overwritten. (y/n) " choice
+       case $choice in
+        y) 
+          echo "$(colorize $COLOR_CYAN "~/.p10k.zsh") moved to folder $(colorize $COLOR_CYAN "~/.dreitagebart/backups/$TIMESTAMP")"
+          mkdir -p $backup_path
+          cp -L ~/.p10k.zsh $backup_path
+          valid_option=true
+          break;;
+        n) 
+          echo "No backup file will be created - file gets overwritten"
+          valid_option=true
+          break;;
+        *) 
+          echo ""
+      esac
+    else
+      break
+    fi
+  done
+
+  stow p10k
+  echo ""
 }
 
 function stow_nvim() {
@@ -150,7 +186,7 @@ function stow_nvim() {
           break;;
         n) 
           echo "No backup for tmux plugins. Folder will be deleted..."
-          rm -rf ~/.tmux/plugins
+          rm -rf ~/.config/nvim
           valid_option=true
           break;;
         *) 
@@ -162,6 +198,7 @@ function stow_nvim() {
   done
 
   stow nvim
+  echo ""
 }
 
 function stow_tmux() {
@@ -223,6 +260,7 @@ function stow_tmux() {
   done
 
   git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
+  echo ""
 }
 
 function install_shell_components() {
@@ -231,6 +269,7 @@ function install_shell_components() {
   install_component "neovim" "nvim"
   install_component "tmux"
   install_component "fzf"
+  install_component "ripgrep"
   install_component "bat"
   install_component "eza"
   install_component "zoxide"
@@ -299,6 +338,8 @@ function show_final_message() {
   echo "1.) Start $(colorize $COLOR_CYAN "tmux") and hit $(colorize $COLOR_BLUE "Control + Space") and $(colorize $COLOR_BLUE "I") (a capital i). This installs the tmux plugins"
   echo "2.) Start $(colorize $COLOR_CYAN "neovim") by typing $(colorize $COLOR_BLUE "nvim") into terminal and type $(colorize $COLOR_BLUE ":Lazy") + $(colorize $COLOR_BLUE "I"). This will install all neovim plugins."
   echo "    After that you should run command $(colorize $COLOR_BLUE ":MasonInstallAll") to install all LSPs"
+  echo ""
+  echo ""
   echo "Press ENTER to finish setup..."
   read -r
 }
@@ -377,4 +418,5 @@ stow_zshrc
 stow_tmux
 stow_git
 stow_nvim
+stow_p10k
 show_final_message

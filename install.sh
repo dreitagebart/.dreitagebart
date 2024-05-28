@@ -355,7 +355,7 @@ function homebrew_post_installation_steps() {
 
 function set_default_shell() {
   # add zsh as a login shell
-  if ! grep -q "$(which zsh)"; then
+  if ! grep -q "$(which zsh) /etc/shells"; then
     command -v zsh | sudo tee -a /etc/shells
   fi
 

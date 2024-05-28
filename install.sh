@@ -353,10 +353,21 @@ function homebrew_post_installation_steps() {
   eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 }
 
+function set_default_shell() {
+  # add zsh as a login shell
+  if ! grep -q "$(which zsh)"; then
+    command -v zsh | sudo tee -a /etc/shells
+  fi
+
+  # use zsh as default shell
+  sudo chsh -s $(which zsh) $USER
+}
+
 print_dreitagebart
 get_timestamp
 install_homebrew
 install_shell_components
+set_default_shell
 stow_zshrc
 stow_tmux
 stow_git

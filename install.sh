@@ -355,12 +355,17 @@ function homebrew_post_installation_steps() {
 
 function set_default_shell() {
   # add zsh as a login shell
-  if ! grep -q "$(which zsh) /etc/shells"; then
+  if ! grep -q $(which zsh) /etc/shells; then
+    echo "Add $(colorize $COLOR_CYAN "zsh") to $(colorize $COLOR_CYAN "/etc/shells")"
     command -v zsh | sudo tee -a /etc/shells
   fi
 
-  # use zsh as default shell
-  sudo chsh -s $(which zsh) $USER
+  if [[ "$SHELL" != *zsh ]]; then
+    echo "You are not using $(colorize $COLOR_CYAN "zsh") as your default shell."
+    echo "Changing your default shell to $(colorize $COLOR_CYAN "zsh")"
+    
+    sudo chsh -s $(which zsh) $USER
+  fi
 }
 
 print_dreitagebart

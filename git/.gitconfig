@@ -1,9 +1,9 @@
-[user]
-	name = dreitagebart
-	email = input@dreitagebart.io
 [core]
 	editor = nvim
 [pull]
 	ff = only
 [init]
 	defaultBranch = main
+[user]
+	name = dreitagebart
+	email = input@dreitagebart.io

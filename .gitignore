@@ -1,2 +1,7 @@
 /backups
 errors.log
+
+.path
+.exports
+.aliases
+.extra

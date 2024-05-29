@@ -128,3 +128,14 @@ eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 eval "$(thefuck --alias)"
 eval "$(zoxide init zsh)"
 source <(fzf --zsh)
+
+# load custom shell dotfiles which won't be commited to this repo (see .gitignore):
+# * ~/.dreitagebart/.path can be used to extend `$PATH`
+# * ~/.dreitagebart/.exports can be used to set some custom exports
+# * ~/.dreitagebart/.aliases can be used to set some custom aliases
+# * ~/.dreitagebart/.extra can be used for other settings, e.g. git credentials 
+for file in ~/.dreitagebart/.{path,exports,aliases,extra}; do
+	[ -r "$file" ] && [ -f "$file" ] && source "$file";
+done
+
+unset file

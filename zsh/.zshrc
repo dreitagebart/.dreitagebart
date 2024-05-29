@@ -204,13 +204,6 @@ export PATH="$BUN_INSTALL/bin:$PATH"
 export DENO_INSTALL="/home/dreitagebart/.deno"
 export PATH="$DENO_INSTALL/bin:$PATH"
 
-eval $(thefuck --alias)
-# You can use whatever you want as an alias, like for Mondays:
-eval $(thefuck --alias FUCK)
-
-eval "$(zoxide init zsh)"
-# Set up fzf key bindings and fuzzy completion
-
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
  
 show_file_or_dir_preview="if [ -d {} ]; then eza --tree --color=always {} | head -200; else bat -n --color=always --line-range :500 {}; fi"
@@ -234,6 +227,5 @@ _fzf_comprun() {
 }
 
 eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-
-# To customize prompt, run `p10k configure` or edit ~/.dreitagebart/p10k/.p10k.zsh.
-[[ ! -f ~/.dreitagebart/p10k/.p10k.zsh ]] || source ~/.dreitagebart/p10k/.p10k.zsh
+eval "$(thefuck --alias)"
+eval "$(zoxide init zsh)"

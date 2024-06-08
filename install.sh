@@ -82,13 +82,15 @@ function stow_zshrc() {
       read -p "Otherwise the file gets overwritten. (y/n) " choice
        case $choice in
         y) 
-          echo "$(colorize $COLOR_CYAN "~/.zshrc") moved to folder $(colorize $COLOR_CYAN "~/.dreitagebart/backups/$TIMESTAMP")"
+          echo "$(colorize $COLOR_CYAN "~/.zshrc") moved to folder $(colorize $COLOR_CYAN "~/.dreitagebart/backups/$TIMESTAMP/.zshrc")"
           mkdir -p $backup_path
           cp -L ~/.zshrc $backup_path
+          rm ~/.zshrc
           valid_option=true
           break;;
         n) 
           echo "No backup file will be created - file gets overwritten"
+          rm ~/.zshrc
           valid_option=true
           break;;
         *) 
@@ -114,13 +116,15 @@ function stow_git() {
       read -p "Otherwise the file gets overwritten. (y/n) " choice
        case $choice in
         y) 
-          echo "$(colorize $COLOR_CYAN "~/.gitconfig") moved to folder $(colorize $COLOR_CYAN "~/.dreitagebart/backups/$TIMESTAMP")"
+          echo "$(colorize $COLOR_CYAN "~/.gitconfig") moved to folder $(colorize $COLOR_CYAN "~/.dreitagebart/backups/$TIMESTAMP/.gitconfig")"
           mkdir -p $backup_path
           cp -L ~/.gitconfig $backup_path
+          rm ~/.gitconfig
           valid_option=true
           break;;
         n) 
           echo "No backup file will be created - file gets overwritten"
+          rm ~/.gitconfig
           valid_option=true
           break;;
         *) 
@@ -135,6 +139,94 @@ function stow_git() {
   echo ""
 }
 
+function stow_vscodium() {
+  # Check if ~/.config/VSCodium/User stuff already exists
+  local valid_option=false
+  local backup_path="$(get_backup_path ".config/VSCodium/User")"
+
+  while [ $valid_option = false ]; do
+    if [ -f "$HOME/.config/VSCodium/User/settings.json" ]; then
+      echo "$(colorize $COLOR_CYAN "~/.config/VSCodium/User/settings.json") already exists. Should I make a backup?"  
+      read -p "Otherwise folder gets overwritten. (y/n) " choice
+       case $choice in
+        y) 
+          echo "$(colorize $COLOR_CYAN "~/.config/VSCodium/User/settings.json") moved to folder $(colorize $COLOR_CYAN "~/.dreitagebart/backups/$TIMESTAMP/.config/VSCodium/User/settings.json")"
+          mkdir -p $backup_path
+          cp -L ~/.config/VSCodium/User/settings.json $backup_path
+          rm ~/.config/VSCodium/User/settings.json
+          valid_option=true
+          break;;
+        n) 
+          echo "No backup for VSCodium settings. File will be deleted..."
+          rm ~/.config/VSCodium/User/settings.json
+          valid_option=true
+          break;;
+        *) 
+          echo ""
+      esac
+    else
+      break
+    fi
+  done
+
+  valid_option=false
+
+  while [ $valid_option = false ]; do
+    if [ -f "$HOME/.config/VSCodium/User/keybindings.json" ]; then
+      echo "$(colorize $COLOR_CYAN "~/.config/VSCodium/User/keybindings.json") already exists. Should I make a backup?"  
+      read -p "Otherwise file gets overwritten. (y/n) " choice
+       case $choice in
+        y) 
+          echo "$(colorize $COLOR_CYAN "~/.config/VSCodium/User/keybindings.json") moved to folder $(colorize $COLOR_CYAN "~/.dreitagebart/backups/$TIMESTAMP/.config/VSCodium/User/keybindings.json")"
+          mkdir -p $backup_path
+          cp -L ~/.config/VSCodium/User/keybindings.json $backup_path
+          rm ~/.config/VSCodium/User/keybindings.json
+          valid_option=true
+          break;;
+        n) 
+          echo "No backup for VSCodium keybindings. File will be deleted..."
+          rm ~/.config/VSCodium/User/keybindings.json
+          valid_option=true
+          break;;
+        *) 
+          echo ""
+      esac
+    else
+      break
+    fi
+  done
+
+  valid_option=false
+
+  while [ $valid_option = false ]; do
+    if [ -d "$HOME/.config/VSCodium/User/snippets" ]; then
+      echo "$(colorize $COLOR_CYAN "~/.config/VSCodium/User/snippets") already exists. Should I make a backup?"  
+      read -p "Otherwise folder gets overwritten. (y/n) " choice
+       case $choice in
+        y) 
+          echo "$(colorize $COLOR_CYAN "~/.config/VSCodium/User/snippets") moved to folder $(colorize $COLOR_CYAN "~/.dreitagebart/backups/$TIMESTAMP/.config/VSCodium/User/snippets")"
+          mkdir -p $backup_path
+          cp -r -L ~/.config/VSCodium/User/snippets $backup_path
+          rm -r ~/.config/VSCodium/User/snippets
+          valid_option=true
+          break;;
+        n) 
+          echo "No backup for VSCodium snippets. File will be deleted..."
+          rm -r ~/.config/VSCodium/User/snippets
+          valid_option=true
+          break;;
+        *) 
+          echo ""
+      esac
+    else
+      break
+    fi
+  done
+
+  stow vscodium
+  echo ""
+}
+
 function stow_p10k() {
   # Check if ~/.p10k.zsh already exists
   local valid_option=false
@@ -146,13 +238,15 @@ function stow_p10k() {
       read -p "Otherwise the file gets overwritten. (y/n) " choice
        case $choice in
         y) 
-          echo "$(colorize $COLOR_CYAN "~/.p10k.zsh") moved to folder $(colorize $COLOR_CYAN "~/.dreitagebart/backups/$TIMESTAMP")"
+          echo "$(colorize $COLOR_CYAN "~/.p10k.zsh") moved to folder $(colorize $COLOR_CYAN "~/.dreitagebart/backups/$TIMESTAMP/.p10k.zsh")"
           mkdir -p $backup_path
           cp -L ~/.p10k.zsh $backup_path
+          rm ~/.p10k.zsh
           valid_option=true
           break;;
         n) 
           echo "No backup file will be created - file gets overwritten"
+          rm ~/.p10k.zsh
           valid_option=true
           break;;
         *) 
@@ -180,12 +274,12 @@ function stow_nvim() {
         y) 
           echo "$(colorize $COLOR_CYAN "~/.config/nvim") moved to folder $(colorize $COLOR_CYAN "~/.dreitagebart/backups/$TIMESTAMP/.config/nvim")"
           mkdir -p $backup_path
-          mv ~/.config/nvim $backup_path
-          # cp -L ~/.config/nvim $backup_path
+          cp -r -L ~/.config/nvim $backup_path
+          rm -r ~/.config/nvim
           valid_option=true
           break;;
         n) 
-          echo "No backup for tmux plugins. Folder will be deleted..."
+          echo "No backup for nvim plugins. Folder will be deleted..."
           rm -rf ~/.config/nvim
           valid_option=true
           break;;
@@ -212,13 +306,15 @@ function stow_tmux() {
       read -p "Otherwise the file gets overwritten. (y/n) " choice
        case $choice in
         y) 
-          echo "$(colorize $COLOR_CYAN "~/.tmux.conf") moved to folder $(colorize $COLOR_CYAN "~/.dreitagebart/backups/$TIMESTAMP")"
+          echo "$(colorize $COLOR_CYAN "~/.tmux.conf") moved to folder $(colorize $COLOR_CYAN "~/.dreitagebart/backups/$TIMESTAMP/.tmux.conf")"
           mkdir -p $backup_path
           cp -L ~/.tmux.conf $backup_path
+          rm ~/.tmux.conf
           valid_option=true
           break;;
         n) 
           echo "No backup file will be created - file gets overwritten"
+          rm ~/.tmux.conf
           valid_option=true
           break;;
         *) 
@@ -243,12 +339,13 @@ function stow_tmux() {
         y) 
           echo "$(colorize $COLOR_CYAN "~/.tmux/plugins") moved to folder $(colorize $COLOR_CYAN "~/.dreitagebart/backups/$TIMESTAMP/.tmux/plugins")"
           mkdir -p $backup_path
-          mv ~/.tmux/plugins $backup_path
+          cp -r -L ~/.tmux/plugins $backup_path
+          rm -r ~/.tmux/plugins
           valid_option=true
           break;;
         n) 
           echo "No backup for tmux plugins. Folder will be deleted..."
-          rm -rf ~/.tmux/plugins
+          rm -r ~/.tmux/plugins
           valid_option=true
           break;;
         *) 
@@ -419,4 +516,5 @@ stow_tmux
 stow_git
 stow_nvim
 stow_p10k
+stow_vscodium
 show_final_message

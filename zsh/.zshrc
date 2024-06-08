@@ -44,9 +44,11 @@ zinit cdreplay -q
 
 # custom keybindings
 bindkey -e
-bindkey '^p' history-search-backward
-bindkey '^n' history-search-forward
-bindkey '^[w' kill-region
+bindkey '^j' history-search-backward # ctrl + j
+bindkey '^k' history-search-forward # ctrl + k
+bindkey '^ ' autosuggest-accept # ctrl + space
+bindkey '^w' autosuggest-clear # ctrl + w
+bindkey '^[ ' kill-region # escape + space
 
 zle_highlight+=(paste:none)
 

@@ -85,5 +85,15 @@
     "key": "ctrl+c",
     "command": "-vscode-neovim.escape",
     "when": "editorTextFocus && neovim.ctrlKeysInsert.c && neovim.init && neovim.mode != 'normal' && editorLangId not in 'neovim.editorLangIdExclusions'"
+  },
+  {
+    "key": "j j",
+    "command": "hideSuggestWidget",
+    "when": "suggestWidgetVisible && textInputFocus"
+  },
+  {
+    "key": "shift+escape",
+    "command": "-hideSuggestWidget",
+    "when": "suggestWidgetVisible && textInputFocus"
   }
 ]

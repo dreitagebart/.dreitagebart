@@ -5,3 +5,5 @@ errors.log
 .exports
 .aliases
 .extra
+
+node_modules

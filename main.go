@@ -1,15 +1,18 @@
 package main
 
 import (
-	"errors"
+	"context"
 	"fmt"
+	"log"
 	"net/mail"
+	"os"
+	"os/exec"
 	"os/user"
-	"time"
+	"strings"
 
-	"github.com/briandowns/spinner"
+	"github.com/charmbracelet/huh"
+	"github.com/charmbracelet/huh/spinner"
 	"github.com/fatih/color"
-	"github.com/manifoldco/promptui"
 )
 
 var (
@@ -20,40 +23,80 @@ var (
 	yellow = color.New(color.FgYellow).SprintFunc()
 )
 
-type SelectItem struct {
-	Value string
-	Label string
-}
-
 type GitConfig struct {
 	Name  string
 	Email string
 }
 
+type FormValues struct {
+	homeDir        string
+	osName         string
+	packageManager string
+	gitConfig      GitConfig
+	run            bool
+}
+
+var formValues FormValues
+
 func main() {
+	detectOS()
+	detectUserInfo()
 	printDreitagebart()
 	runQuestionnaire()
+	runInstallation()
+}
+
+func runInstallation() {
+	installPackage("zsh")
+	installPackage("stow")
+	installPackage("neovim", "nvim")
+	// installPackage("tmux")
+	// installPackage("fzf")
+	// installPackage("ripgrep")
+	// installPackage("bat")
+	// installPackage("eza")
+	// installPackage("zoxide")
+	// installPackage("thefuck")
 }
 
 func runQuestionnaire() {
-	gitConfig := questionGitConfig()
+	formValues.run = true
 
-	useTmux := questionUseTmux()
-	useNeoVim := questionUseNeoVim()
+	form := huh.NewForm(
+		huh.NewGroup(
+			huh.NewSelect[string]().
+				Title("I detected "+formValues.osName+" as your linux distribution - so I will use "+formValues.packageManager+" for installing your software packages. Is this okay?").
+				Options(
+					huh.NewOption("apt", "apt"),
+					huh.NewOption("dnf", "dnf"),
+					huh.NewOption("pacman", "pacman"),
+				).
+				Value(&formValues.packageManager),
+		),
+		huh.NewGroup(
+			huh.NewInput().
+				Title("What's your name and email?\nI need this information for your .gitconfig file").
+				Value(&formValues.gitConfig.Name),
+			huh.NewInput().
+				Title("This email will be used for git commits").
+				Value(&formValues.gitConfig.Email),
+		),
+		huh.NewGroup(
+			huh.NewConfirm().
+				Title("Are you sure you want to run the installer?").
+				Value(&formValues.run),
+		),
+	).WithTheme(huh.ThemeCatppuccin())
 
-	// if gitConfig {
-	fmt.Println("Your name is " + gitConfig.Name)
-	fmt.Println("Your email is " + gitConfig.Email)
-	// }
+	err := form.Run()
 
-	if useTmux {
-		fmt.Println("You want to use tmux")
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	if useNeoVim {
-		fmt.Println("You want to use neovim")
+	if !formValues.run {
+		os.Exit(0)
 	}
-
 }
 
 func isValidEmail(email string) bool {
@@ -62,153 +105,162 @@ func isValidEmail(email string) bool {
 	return err == nil
 }
 
-func questionGitConfig() GitConfig {
-	var result string
-	var gitConfig GitConfig
+func isPackageInstalled(packageName string) bool {
+	command := exec.Command("which", packageName)
 
-	validateName := func(input string) error {
-		if len(input) < 3 {
-			return errors.New("Username must have more than 3 characters")
-		}
-
-		return nil
-	}
-
-	userInfo, err := user.Current()
-
-	if err == nil {
-		gitConfig.Name = userInfo.Username
-	}
-
-	namePrompt := promptui.Prompt{
-		Label:     "What is your name in .gitconfig?",
-		Validate:  validateName,
-		Default:   gitConfig.Name,
-		AllowEdit: true,
-	}
-
-	for {
-		result, err = namePrompt.Run()
-
-		if err == nil {
-			gitConfig.Name = result
-
-			break
-		}
-	}
-
-	validateEmail := func(input string) error {
-		if len(input) == 0 {
-			return errors.New("This is not a valid email address")
-		}
-
-		if !isValidEmail(input) {
-			return errors.New("This is not a valid email address")
-		}
-
-		return nil
-	}
-
-	emailPrompt := promptui.Prompt{
-		AllowEdit: true,
-		Label:     "What is your email in .gitconfig",
-		Validate:  validateEmail,
-		Default:   userInfo.Username + "@example.com",
-	}
-
-	for {
-		result, err = emailPrompt.Run()
-
-		if err == nil {
-			gitConfig.Email = result
-
-			break
-		}
-	}
-
-	return gitConfig
-}
-
-func questionUseNeoVim() bool {
-	prompt := promptui.Prompt{
-		Label:     "Do you want to use neovim?",
-		IsConfirm: true,
-	}
-
-	_, err := prompt.Run()
+	_, err := command.CombinedOutput()
 
 	if err != nil {
 		return false
 	}
-
-	return true
-}
-
-func questionUseTmux() bool {
-	prompt := promptui.Prompt{
-		Label:     "Do you want to use tmux?",
-		IsConfirm: true,
-	}
-
-	_, err := prompt.Run()
-
-	if err != nil {
-		return false
-	}
-
-	// fmt.Printf("You choose %q\n", result)
 
 	return true
 }
 
 func printDreitagebart() {
 	fmt.Println(`
-
-                                ▓▓▓▓▓▓▓▓▓▓▓▓▓█
-                             ▓▓▓▓▓▓▓▓█▓▓▓▓▓▓▓▓▓▓▓▓
-                         ▓▓▓▓▓▓▓▓▓▓▓▓█▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
-                        ▓▓▓▓▓▓▓▓▓▓▓▓▓▓█▓▓▓▓▓▓▓▓▓▓▓▓█▓▓▓█
-                     █▓▓▓▓▓▓▓▓▓▓▓▓▓▓█████▓▓▓▓▓▓▓▓▓▓▓▓▓█▓▓
-                    █▓▓▓▓▓▓▓▓▓▓▓▓██▓▓████████▓▓▓▓▓▓▓▓▓▓█▓▓▓
-                   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓███▓▓▓▓▓▓▓▓▓█▓▓
-                  ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓█████████▓▓▓▓▓███▓██▓▓▓▓▓▓
-                  ▓▓▓▓▓▓█▓▓▓▓▓█████████████████▓▓▓▓████████▓▓
-                 ▓▓█████▓▓▓███▒░░░░░░░░░░░░░░░░▓██▓▓▓▓██████▓
-                 ▓████▓▓▓██▒░░░░░░░░░░░░░░░░░░░░░░░▓█▓▓█████▓▓
-                ▓████▓▓█▒░░░░░░░░░░░░░░░░░░░░░░░░░░░░░▓▓▓████▓
-                ▓███▓▓▒░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░▓▓▓██▓
-                ▓██▓░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░▒▓▓▓
-                █▓░░░░░░▓▓▓▓▓▓▓▓▓▓░░░░░░░░░░▒▓▓▓▓▓▓▓▓▓░░░░░░▓▓
-                ░░▓█████▓▓▓▓▓▓▓▓███▓▓▒▒▒▒▒▓████▓▓▓▓▓▓▓█████▓░░░
-               ░░░██▓░░░░░░▓▓▓▓▒░░░▒██████▓░░░▒▓▓▓▓▒░░░░░▒██▒░░░
-               ░░░░█▒░░░░▒ ░▓█▓▒ ░░░██▒▒██▒░░ ░▓█▓░ ░▒░░░░▓▒░░░░
-               ░░▒░▓▒░░░░░░░░░░░░░░░█░░░░█▓░░░░░░░░░░░░░░░█░░▒░░
-               ░░▓░▒█░░░░░░░░░░░░░░▓▓░░░░░█░░░░░░░░░░░░░░▒▓░░▒░░
-               ░░▓▒░▓▓░░░░░░░░░░░░▓▓░░░░░░▒█░░░░░░░░░░░░░█░░▒▒░░
-                ░▓▒░░░▒▓▓▓▓▓▓▓▓▓▓▒░░░░░░░░░░▒▒▓▓▓▓▓▓▓▓▓▓▒░░░▒▒░
-                ░▓▓░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░▓▒░
-                ▒▓▓▒░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░▒▓▓
-                 ▓▓▒░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░▓▓▓
-                 ▓▓▓▒░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░▒▓▓▓
-                 ▓▓▓▓░░░░░░░░░░░░░░░░▒▓▓▒░░░░░░░░░░░░░░░░░▓▓▓▓
-                  ▓▓▓▒░░░░░░░░░▒▓▓▓▓▓▓▓▓▓▓▓▓▓▓▒░░░░░░░░░░▓▓▓▓
-                  ▓▓▓▓▒░░░░░░▒▓▓▓▓▓▓▓▓▒▒▓▒▓▓▓▓▓▓▓░░░░░░░▒▓▓▓▓
-                   ▓▓▓▓▓▒░░░▒▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓░░░░▓▓▓▓▓▓
-                   ▓▓▓▓▓▓▓▓▓▓▓▒░░░░░░░░░░░░░░░░░▓▓▒▒▓▓▓▓▓▓▓
-                    ▓▓▓▓▓▓▓▓▓▓▓▒░░░░▓▓▓▓▓▓▒░░░░▒▓▓▓▓▓▓▓▓▓▓▓
-                      ▓▓▓▓▓▓▓▓▓▓░░░░░▒▓▓▓▒░░░░▒▓▓▓▓▓▓▓▓▓▓
-                       ▓▓▓▓▓▓▓▓▓▓▒░░░▒▒▒▒░░░░▒▓▓▓▓▓▓▓▓▓▓
-                         ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
-                          ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
-                             ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
-                                ▓▓▓▓▓▓▓▓▓▓▓▓▓▓
-                                    ▓▓▓▓▓▓▓
-
+  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░▒▓▓▓
+  ▓▓▓▓▓▓░░░░░░░░░░▒▓▓▓▓▓▓▓▓▓░░░░░░▓▓
+  ▓▓▓▓███▓▓▒▒▒▒▒▓████▓▓▓▓▓▓▓█████▓░░░
+  ▓▓▓▒░░░▒██████▓░░░▒▓▓▓▓▒░░░░░▒██▒░░░
+  ▓█▓▒ ░░░██▒▒██▒░░ ░▓█▓░ ░▒░░░░▓▒░░░░
+  ░░░░░░░░█░░░░█▓░░░░░░░░░░░░░░░█░░▒░░
+  ░░░░░░░▓▓░░░░░█░░░░░░░░░░░░░░▒▓░░▒░░
+  ░░░░░░▓▓░░░░░░▒█░░░░░░░░░░░░░█░░▒▒░░
+  ▓▓▓▓▓▒░░░░░░░░░░▒▒▓▓▓▓▓▓▓▓▓▓▒░░░▒▒░
+  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░▓▒░
+  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░▒▓▓
+  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░▓▓▓
+  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░▒▓▓▓
+  ░░░░░░░░░▒▓▓▒░░░░░░░░░░░░░░░░░▓▓▓▓         _       _    __ _ _
+  ░░░▒▓▓▓▓▓▓▓▓▓▓▓▓▓▓▒░░░░░░░░░░▓▓▓▓         | |     | |  / _(_) |
+  ░▒▓▓▓▓▓▓▓▓▒▒▓▒▓▓▓▓▓▓▓░░░░░░░▒▓▓▓▓       __| | ___ | |_| |_ _| | ___  ___
+  ▒▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓░░░░▓▓▓▓▓▓       / _' |/ _ \| __|  _| | |/ _ \/ __|
+  ▓▓▒░░░░░░░░░░░░░░░░░▓▓▒▒▓▓▓▓▓▓▓       | (_| | (_) | |_| | | | |  __/\__ \
+  ▓▓▓▒░░░░▓▓▓▓▓▓▒░░░░▒▓▓▓▓▓▓▓▓▓▓▓      (_)__,_|\___/ \__|_| |_|_|\___||___/
+  ▓▓▓▓░░░░░▒▓▓▓▒░░░░▒▓▓▓▓▓▓▓▓▓▓
+  ▓▓▓▓▓▒░░░▒▒▒▒░░░░▒▓▓▓▓▓▓▓▓▓▓
+  ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
 	`)
 	fmt.Println("Hit ENTER to start the installer...")
-	s := spinner.New(spinner.CharSets[27], 100*time.Millisecond)
-	s.Start()
-	time.Sleep(4 * time.Second)
-	s.Stop()
 	fmt.Scanln()
+}
+
+func detectUserInfo() {
+	currentUser, err := user.Current()
+
+	if err == nil {
+		formValues.gitConfig.Name = currentUser.Username
+		formValues.gitConfig.Email = fmt.Sprintf("%s@example.com", currentUser.Username)
+
+		formValues.homeDir = currentUser.HomeDir
+	}
+}
+
+func detectOS() {
+	_, err := os.Stat("/etc/os-release")
+
+	if err == nil {
+		content, err := os.ReadFile("/etc/os-release")
+
+		if err != nil {
+			return
+		}
+
+		lines := strings.Split(string(content), "\n")
+
+		for _, line := range lines {
+			if strings.HasPrefix(line, "ID=") {
+				osID := strings.Trim(strings.TrimPrefix(line, "ID="), "\"")
+
+				formValues.osName = osID
+
+				switch osID {
+				case "arch", "manjaro":
+					formValues.packageManager = "pacman"
+				case "debian", "ubuntu", "raspbian", "linuxmint", "pop":
+					formValues.packageManager = "apt"
+					return
+				case "fedora", "rocky", "almalinux":
+					formValues.packageManager = "dnf"
+					return
+				}
+			}
+		}
+	}
+}
+
+func installNixInstaller() {
+	var command *exec.Cmd
+
+	command = exec.Command("sh <(curl -L https://nixos.org/nix/install) --daemon")
+
+	err := spinner.New().Type(spinner.MiniDot).ActionWithErr(func(context.Context) error {
+		_, err := command.CombinedOutput()
+
+		return err
+	}).Run()
+
+	if err != nil {
+		fmt.Println(red(fmt.Sprintf("Failed to install nix installer: %v", err)))
+		os.Exit(1)
+	}
+}
+
+func installHomebrew() {
+	var command *exec.Cmd
+
+	command = exec.Command("/bin/bash -c \"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\"")
+
+	err := spinner.New().Type(spinner.MiniDot).ActionWithErr(func(context.Context) error {
+		_, err := command.CombinedOutput()
+
+		return err
+	}).Run()
+
+	if err != nil {
+		fmt.Println(red(fmt.Sprintf("Failed to install homebrew: %v", err)))
+		os.Exit(1)
+	}
+}
+
+func installPackage(packageName string, alias ...string) {
+	var pkg string
+	var command *exec.Cmd
+
+	if len(alias) > 0 {
+		pkg = alias[0]
+	} else {
+		pkg = packageName
+	}
+
+	if isPackageInstalled(pkg) {
+		fmt.Println(green(pkg) + " is already installed... skipped")
+
+		return
+	}
+
+	switch formValues.packageManager {
+	case "apt":
+		command = exec.Command("sudo", "apt", "install", "-y", packageName)
+	case "dnf":
+		command = exec.Command("sudo", "dnf", "install", "-y", packageName)
+	case "pacman":
+		command = exec.Command("sudo", "pacman", "-Suy", packageName)
+	}
+
+	err := spinner.New().Type(spinner.MiniDot).
+		Title(" Installing package...").ActionWithErr(func(context.Context) error {
+		_, err := command.CombinedOutput()
+
+		return err
+	}).Run()
+
+	if err != nil {
+		fmt.Println(red(fmt.Sprintf("Failed to install %s: %v", packageName, err)))
+
+		os.Exit(1)
+	}
+
+	fmt.Println(green(fmt.Sprintf("%s installed successfully.", packageName)))
 }

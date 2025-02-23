@@ -20,6 +20,6 @@ case "$OS" in
   *) echo "Unsupported operating system"; exit 1;;
 esac
 
-curl -L "https://github.com/yourusername/yourrepo/releases/latest/download/$BINARY" -o dotfiles-installer
+curl -L "https://github.com/dreitagebart/.dreitagebart/releases/download/v1/dotfiles-installer" -o dotfiles-installer
 chmod +x dotfiles-installer
 ./dotfiles-installer

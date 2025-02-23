@@ -1,3 +1,0 @@
-- document nerd fonts usage
-- customization and overwriting with dotfiles
-- installing extension with versions possible?

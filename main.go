@@ -4,11 +4,12 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"net/mail"
 	"os"
 	"os/exec"
 	"os/user"
+	"path"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/huh/spinner"
@@ -29,11 +30,16 @@ type GitConfig struct {
 }
 
 type FormValues struct {
-	homeDir        string
-	osName         string
-	packageManager string
-	gitConfig      GitConfig
-	run            bool
+	homeDir             string
+	osName              string
+	packageManager      string
+	installTmux         bool
+	installTmuxAddons   bool
+	installNeovim       bool
+	installNeovimAddons bool
+	backupPath          string
+	gitConfig           GitConfig
+	run                 bool
 }
 
 var formValues FormValues
@@ -47,25 +53,39 @@ func main() {
 }
 
 func runInstallation() {
-	installPackage("zsh")
-	installPackage("stow")
-	installPackage("neovim", "nvim")
-	// installPackage("tmux")
-	// installPackage("fzf")
-	// installPackage("ripgrep")
-	// installPackage("bat")
-	// installPackage("eza")
-	// installPackage("zoxide")
-	// installPackage("thefuck")
+	installHomebrew()
+	installNativePackage("zsh")
+	installNativePackage("stow")
+	if formValues.installNeovim {
+		installNativePackage("neovim", "nvim")
+	}
+	if formValues.installTmux {
+		installNativePackage("tmux")
+	}
+
+	installHomebrewPackage("fzf")
+	installHomebrewPackage("ripgrep", "rg")
+	installHomebrewPackage("bat")
+	installHomebrewPackage("eza")
+	installHomebrewPackage("zoxide")
+	installHomebrewPackage("thefuck")
+
+	stowFile(".gitconfig", "git")
 }
 
 func runQuestionnaire() {
 	formValues.run = true
+	formValues.installNeovimAddons = true
+	formValues.installTmuxAddons = true
+	formValues.installTmux = !isPackageInstalled("tmux")
+	formValues.installNeovim = !isPackageInstalled("nvim")
 
 	form := huh.NewForm(
 		huh.NewGroup(
+			huh.NewNote().
+				Title("It seems that you are using "+formValues.osName+" as your linux distribution"),
 			huh.NewSelect[string]().
-				Title("I detected "+formValues.osName+" as your linux distribution - so I will use "+formValues.packageManager+" for installing your software packages. Is this okay?").
+				Title("I will use "+formValues.packageManager+" for installing your software packages. Is this okay?").
 				Options(
 					huh.NewOption("apt", "apt"),
 					huh.NewOption("dnf", "dnf"),
@@ -74,13 +94,71 @@ func runQuestionnaire() {
 				Value(&formValues.packageManager),
 		),
 		huh.NewGroup(
+			huh.NewNote().
+				Title("What's your name and email?\nI will put this information in your .gitconfig file"),
 			huh.NewInput().
-				Title("What's your name and email?\nI need this information for your .gitconfig file").
+				Title("Your name").
 				Value(&formValues.gitConfig.Name),
 			huh.NewInput().
-				Title("This email will be used for git commits").
+				Title("Your email").
 				Value(&formValues.gitConfig.Email),
 		),
+		huh.NewGroup(
+			huh.NewConfirm().
+				Title("Do you want to install Tmux?").
+				Value(&formValues.installTmux),
+		).WithHideFunc(func() bool {
+			return !formValues.installTmux
+		}),
+		huh.NewGroup(
+			huh.NewConfirm().
+				Title("Tmux is already installed - install tmux theme and plugins?").
+				Value(&formValues.installTmuxAddons),
+		).WithHideFunc(func() bool {
+			return formValues.installTmux
+		}),
+		huh.NewGroup(
+			huh.NewConfirm().
+				Title("Do you want to install tmux themes and plugins as well?").
+				Value(&formValues.installTmuxAddons),
+		).WithHideFunc(func() bool {
+			return !formValues.installTmux
+		}),
+		huh.NewGroup(
+			huh.NewConfirm().
+				Title("Do you want to install NeoVim?").
+				Value(&formValues.installNeovim),
+		).WithHideFunc(func() bool {
+			return !formValues.installNeovim
+		}),
+		huh.NewGroup(
+			huh.NewConfirm().
+				Title("Neovim is already installed - install neovim theme and plugins?").
+				Value(&formValues.installNeovimAddons),
+		).WithHideFunc(func() bool {
+			return formValues.installNeovim
+		}),
+		huh.NewGroup(
+			huh.NewConfirm().
+				Title("Do you want to install neovim themes and plugins as well?").
+				Value(&formValues.installNeovimAddons),
+		).WithHideFunc(func() bool {
+			return !formValues.installNeovim
+		}),
+
+		// huh.NewGroup(
+		// 	huh.NewConfirm().
+		// 		TitleFunc(func() string {
+		// 			if isNeovimInstalled {
+		// 				return "Neovim is already installed - install neovim theme and plugins?"
+		// 			}
+
+		// 			return "Do you want to install neovim themes and plugins as well?"
+		// 		}, &isNeovimInstalled).
+		// 		Value(&formValues.installNeovimAddons),
+		// ).WithHideFunc(func() bool {
+		// 	return !formValues.installNeovim
+		// }),
 		huh.NewGroup(
 			huh.NewConfirm().
 				Title("Are you sure you want to run the installer?").
@@ -99,20 +177,75 @@ func runQuestionnaire() {
 	}
 }
 
-func isValidEmail(email string) bool {
-	_, err := mail.ParseAddress(email)
+// func isValidEmail(email string) bool {
+// 	_, err := mail.ParseAddress(email)
 
-	return err == nil
-}
+// 	return err == nil
+// }
 
 func isPackageInstalled(packageName string) bool {
 	command := exec.Command("which", packageName)
 
 	_, err := command.CombinedOutput()
 
+	return err == nil
+}
+
+func createBackupPath() {
+	backupPath := path.Join(formValues.homeDir, ".dreitagebart", "backups")
+	currentTime := time.Now()
+	dateString := currentTime.Format("19851127-143015")
+
+	formValues.backupPath = path.Join(backupPath, dateString)
+
+	err := os.MkdirAll(formValues.backupPath, 0755)
+
 	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func stowFile(filename string, template string) {
+	var command *exec.Cmd
+
+	stowPath := path.Join(formValues.homeDir, filename)
+	templatePath := path.Join(formValues.homeDir, ".dreitagebart", template)
+
+	if fileExists(stowPath) {
+		err := os.Rename(stowPath, path.Join(formValues.backupPath, filename))
+
+		if err != nil {
+			fmt.Printf("failed to move file: %s", err)
+			os.Exit(1)
+		}
+	}
+
+	command = exec.Command("stow", templatePath)
+
+	err := spinner.New().Type(spinner.MiniDot).ActionWithErr(func(context.Context) error {
+		_, err := command.CombinedOutput()
+
+		return err
+	}).Run()
+
+	if err != nil {
+		fmt.Println(red(fmt.Sprintf("Failed to stow %s", filename)))
+		os.Exit(1)
+	}
+}
+
+func fileExists(filename string) bool {
+	_, err := os.Stat(filename)
+
+	if err == nil {
+		return true
+	}
+
+	if os.IsNotExist(err) {
 		return false
 	}
+
+	log.Fatal(err)
 
 	return true
 }
@@ -143,7 +276,7 @@ func printDreitagebart() {
   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
 	`)
 	fmt.Println("Hit ENTER to start the installer...")
-	fmt.Scanln()
+	// fmt.Scanln()
 }
 
 func detectUserInfo() {
@@ -210,6 +343,12 @@ func installNixInstaller() {
 func installHomebrew() {
 	var command *exec.Cmd
 
+	if isPackageInstalled("brew") {
+		fmt.Println(green("homebrew") + " is already installed... skipped")
+
+		return
+	}
+
 	command = exec.Command("/bin/bash -c \"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\"")
 
 	err := spinner.New().Type(spinner.MiniDot).ActionWithErr(func(context.Context) error {
@@ -224,7 +363,7 @@ func installHomebrew() {
 	}
 }
 
-func installPackage(packageName string, alias ...string) {
+func installHomebrewPackage(packageName string, alias ...string) {
 	var pkg string
 	var command *exec.Cmd
 
@@ -235,18 +374,52 @@ func installPackage(packageName string, alias ...string) {
 	}
 
 	if isPackageInstalled(pkg) {
-		fmt.Println(green(pkg) + " is already installed... skipped")
+		fmt.Println(green(packageName) + " is already installed... skipped")
+
+		return
+	}
+
+	command = exec.Command("brew", "install", pkg)
+
+	err := spinner.New().Type(spinner.MiniDot).
+		Title(" Installing package " + packageName + "...").ActionWithErr(func(context.Context) error {
+		_, err := command.CombinedOutput()
+
+		return err
+	}).Run()
+
+	if err != nil {
+		fmt.Println(red(fmt.Sprintf("Failed to install %s: %v", packageName, err)))
+
+		os.Exit(1)
+	}
+
+	fmt.Println(green(fmt.Sprintf("%s installed successfully.", packageName)))
+}
+
+func installNativePackage(packageName string, alias ...string) {
+	var pkg string
+	var command *exec.Cmd
+
+	if len(alias) > 0 {
+		pkg = alias[0]
+	} else {
+		pkg = packageName
+	}
+
+	if isPackageInstalled(pkg) {
+		fmt.Println(green(packageName) + " is already installed... skipped")
 
 		return
 	}
 
 	switch formValues.packageManager {
 	case "apt":
-		command = exec.Command("sudo", "apt", "install", "-y", packageName)
+		command = exec.Command("sudo", "apt", "install", "-y", pkg)
 	case "dnf":
-		command = exec.Command("sudo", "dnf", "install", "-y", packageName)
+		command = exec.Command("sudo", "dnf", "install", "-y", pkg)
 	case "pacman":
-		command = exec.Command("sudo", "pacman", "-Suy", packageName)
+		command = exec.Command("sudo", "pacman", "-Suy", pkg)
 	}
 
 	err := spinner.New().Type(spinner.MiniDot).

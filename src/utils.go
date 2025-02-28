@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/charmbracelet/huh/spinner"
+	"gopkg.in/ini.v1"
 )
 
 func isPackageInstalled(packageName string) bool {
@@ -23,6 +24,37 @@ func isPackageInstalled(packageName string) bool {
 	_, err := command.CombinedOutput()
 
 	return err == nil
+}
+
+func setDefaultShell() {
+	cacheSudoPassword()
+
+	user := os.Getenv("USER")
+
+	if user == "" {
+		fmt.Println(red(fmt.Printf("USER environment variable not set")))
+		return
+	}
+
+	zshPath, err := exec.LookPath("zsh")
+
+	if err != nil {
+		fmt.Println(red(fmt.Sprintf("Failed to lookup zsh file path: %v", err)))
+		return
+	}
+
+	command := exec.Command("sudo", "chsh", "-s", zshPath, user)
+	command.Stdin = os.Stdin
+	// command.Stdout = os.Stdout
+	// command.Stderr = os.Stderr
+	err = command.Run()
+
+	if err != nil {
+		fmt.Println(red(fmt.Sprintf("Failed to set default shell: %v", err)))
+		return
+	}
+
+	fmt.Println("ZSH is now your default shell")
 }
 
 func createBackupPath() {
@@ -53,6 +85,36 @@ func fileExists(filename string) bool {
 	log.Fatal(err)
 
 	return true
+}
+
+func configureGit() {
+	gitConfigPath := path.Join(formValues.homeDir, ".dreitagebart", "git", "dot-gitconfig")
+
+	cfg, err := ini.Load(gitConfigPath)
+
+	if err != nil {
+		fmt.Println("Could not configure .gitconfig file")
+		os.Exit(1)
+	}
+
+	gitUserSection, err := cfg.GetSection("user")
+	if err != nil {
+		gitUserSection, err = cfg.NewSection("user")
+
+		if err != nil {
+			fmt.Println("Error creating user section: ", err)
+			return
+		}
+	}
+
+	gitUserSection.Key("name").SetValue(formValues.gitConfig.Name)
+	gitUserSection.Key("email").SetValue(formValues.gitConfig.Email)
+
+	err = cfg.SaveTo(gitConfigPath)
+	if err != nil {
+		fmt.Println("Error saving .gitconfig:", err)
+		return
+	}
 }
 
 func detectUserInfo() {
@@ -117,7 +179,7 @@ func detectOS() {
 // }
 
 func installHomebrew() {
-	var command *exec.Cmd
+	// var command *exec.Cmd
 
 	if isPackageInstalled("brew") {
 		fmt.Println(green("homebrew") + " is already installed... skipped")
@@ -125,23 +187,64 @@ func installHomebrew() {
 		return
 	}
 
-	command = exec.Command("/bin/bash -c \"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\"")
+	cacheSudoPassword()
 
-	err := spinner.New().Type(spinner.MiniDot).ActionWithErr(func(context.Context) error {
-		_, err := command.CombinedOutput()
+	command := exec.Command("/bin/bash", "-c", "curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh | bash")
 
-		return err
-	}).Run()
+	err := spinner.New().
+		Type(spinner.MiniDot).
+		Title(" Installing homebrew...").
+		ActionWithErr(func(context.Context) error {
+			command.Stderr = os.Stderr
+			err := command.Run()
+
+			return err
+		}).
+		Accessible(true).
+		Run()
 
 	if err != nil {
 		fmt.Println(red(fmt.Sprintf("Failed to install homebrew: %v", err)))
 		os.Exit(1)
 	}
+
+	command = exec.Command("/bin/bash", "-c", "eval \"$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)\"")
+	err = command.Run()
+	if err != nil {
+		fmt.Println(red(fmt.Sprintf("Failed to eval homebrew: %v", err)))
+		os.Exit(1)
+	}
+
+	// if err != nil {
+	// 	fmt.Println(red(fmt.Sprintf("Failed to install homebrew: %v", err)))
+	// 	os.Exit(1)
+	// }
+}
+
+func installHomebrewFont(fontName string) {
+	command := exec.Command("brew", "install", "--cask", fontName)
+
+	err := spinner.New().
+		Type(spinner.MiniDot).
+		Title(" Installing font " + fontName + "...").
+		ActionWithErr(func(context.Context) error {
+			command.Stderr = os.Stderr
+			err := command.Run()
+
+			return err
+		}).Run()
+
+	if err != nil {
+		fmt.Println(red(fmt.Sprintf("Failed to install %s: %v", fontName, err)))
+
+		os.Exit(1)
+	}
+
+	fmt.Println(green(fmt.Sprintf("Font %s installed successfully.", fontName)))
 }
 
 func installHomebrewPackage(packageName string, alias ...string) {
 	var pkg string
-	var command *exec.Cmd
 
 	if len(alias) > 0 {
 		pkg = alias[0]
@@ -155,14 +258,19 @@ func installHomebrewPackage(packageName string, alias ...string) {
 		return
 	}
 
-	command = exec.Command("brew", "install", pkg)
+	command := exec.Command("brew", "install", pkg)
 
-	err := spinner.New().Type(spinner.MiniDot).
-		Title(" Installing package " + packageName + "...").ActionWithErr(func(context.Context) error {
-		_, err := command.CombinedOutput()
+	err := spinner.New().
+		Type(spinner.MiniDot).
+		Title(" Installing package " + packageName + "...").
+		ActionWithErr(func(context.Context) error {
+			// command.Stdin = os.Stdin
+			// command.Stdout = os.Stdout
+			command.Stderr = os.Stderr
+			err := command.Run()
 
-		return err
-	}).Run()
+			return err
+		}).Run()
 
 	if err != nil {
 		fmt.Println(red(fmt.Sprintf("Failed to install %s: %v", packageName, err)))
@@ -189,21 +297,50 @@ func installNativePackage(packageName string, alias ...string) {
 		return
 	}
 
+	cacheSudoPassword()
+
+	// command = exec.Command("/bin/bash", "-c", "sudo echo \"\"")
+	// command.Stdin = os.Stdin
+	// command.Stdout = os.Stdout
+	// command.Stderr = os.Stderr
+	// err := command.Run()
+
+	// if err != nil {
+	// 	fmt.Println(red(fmt.Sprintf("%v", err)))
+	// 	os.Exit(1)
+	// }
+
 	switch formValues.packageManager {
 	case "apt":
-		command = exec.Command("sudo", "apt", "install", "-y", pkg)
+		command = exec.Command("sudo", "apt", "install", "-y", packageName)
 	case "dnf":
-		command = exec.Command("sudo", "dnf", "install", "-y", pkg)
+		// command = exec.Command("sudo", "dnf", "install", "-y", packageName)
+
+		command = exec.Command("/bin/bash", "-c", "sudo dnf install -y "+packageName)
 	case "pacman":
-		command = exec.Command("sudo", "pacman", "-Suy", pkg)
+		command = exec.Command("sudo", "pacman", "-Suy", packageName)
 	}
 
-	err := spinner.New().Type(spinner.MiniDot).
-		Title(" Installing package...").ActionWithErr(func(context.Context) error {
-		_, err := command.CombinedOutput()
+	// command.Stdin = os.Stdin
+	// command.Stdout = os.Stdout
+	// command.Stderr = os.Stderr
+	// err := command.Run()
 
-		return err
-	}).Run()
+	// return err
+
+	err := spinner.New().
+		Type(spinner.MiniDot).
+		Title(" Installing package " + packageName + "...").
+		ActionWithErr(func(context.Context) error {
+			// command.Stdin = os.Stdin
+			// command.Stdout = os.Stdout
+			command.Stderr = os.Stderr
+			err := command.Run()
+
+			return err
+		}).
+		// Accessible(true).
+		Run()
 
 	if err != nil {
 		fmt.Println(red(fmt.Sprintf("Failed to install %s: %v", packageName, err)))
@@ -212,6 +349,16 @@ func installNativePackage(packageName string, alias ...string) {
 	}
 
 	fmt.Println(green(fmt.Sprintf("%s installed successfully.", packageName)))
+}
+
+func cacheSudoPassword() {
+	command := exec.Command("sudo", "-v")
+	err := command.Run()
+
+	if err != nil {
+		fmt.Println(red(fmt.Sprintf("%v", err)))
+		os.Exit(1)
+	}
 }
 
 func printDreitagebart() {
@@ -262,4 +409,92 @@ func copyTemplateFiles(fsys embed.FS, destDir string) error {
 
 		return os.WriteFile(destPath, content, 0644)
 	})
+}
+
+func moveFolderIfExists(sourcePath, destinationPath string) {
+	fileInfo, err := os.Lstat(sourcePath)
+
+	if err != nil {
+		if os.IsNotExist(err) {
+			fmt.Sprintln("source path does not exist: %w", err)
+			return
+		}
+
+		fmt.Sprintln("failed to stat source path: %w", err)
+		return
+	}
+
+	if fileInfo.Mode()&os.ModeSymlink == os.ModeSymlink {
+		err = os.Rename(sourcePath, destinationPath)
+
+		if err != nil {
+			fmt.Sprintln("failed to move symlink: %w", err)
+			return
+		}
+
+		return
+	}
+
+	if !fileInfo.IsDir() {
+		fmt.Sprintln("source path is not a directory")
+		return
+	}
+
+	// Ensure destination directory exists.
+	destDir := filepath.Dir(destinationPath)
+	if _, err := os.Stat(destDir); os.IsNotExist(err) {
+		err := os.MkdirAll(destDir, 0755)
+		if err != nil {
+			fmt.Sprintln("failed to create destination directory: %w", err)
+			return
+		}
+	}
+
+	err = os.Rename(sourcePath, destinationPath)
+	if err != nil {
+		fmt.Sprintln("failed to move folder: %w", err)
+		return
+	}
+
+	return
+}
+
+func stowFile(filename string, template string) {
+	var command *exec.Cmd
+
+	stowPath := path.Join(formValues.homeDir, filename)
+	templatePath := path.Join(formValues.homeDir, ".dreitagebart")
+
+	if fileExists(stowPath) {
+		fileInfo, err := os.Stat(stowPath)
+
+		if err != nil {
+			fmt.Printf("Could not read fileinfo: %s", err)
+			os.Exit(1)
+		}
+
+		if fileInfo.IsDir() {
+			moveFolderIfExists(stowPath, formValues.backupPath)
+		} else {
+			err = os.Rename(stowPath, path.Join(formValues.backupPath, filename))
+
+			if err != nil {
+				fmt.Printf("failed to move file: %s", err)
+				os.Exit(1)
+			}
+		}
+	}
+
+	command = exec.Command("stow", template, "--dir="+templatePath, "--dotfiles")
+
+	err := spinner.New().Type(spinner.MiniDot).ActionWithErr(func(context.Context) error {
+		_, err := command.CombinedOutput()
+
+		return err
+	}).Run()
+
+	if err != nil {
+		fmt.Println(red(fmt.Sprintf("Failed to stow %s", filename)))
+		os.Exit(1)
+	}
 }

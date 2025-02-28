@@ -1,15 +1,11 @@
 package main
 
 import (
-	"context"
-	"fmt"
 	"log"
 	"os"
-	"os/exec"
 	"path"
 
 	"github.com/charmbracelet/huh"
-	"github.com/charmbracelet/huh/spinner"
 )
 
 func main() {
@@ -31,6 +27,8 @@ func runInstallation() {
 		installNativePackage("tmux")
 	}
 
+	installHomebrewFont("font-meslo-lg-nerd-font")
+	installHomebrewPackage("lazygit")
 	installHomebrewPackage("fzf")
 	installHomebrewPackage("ripgrep", "rg")
 	installHomebrewPackage("bat")
@@ -39,8 +37,22 @@ func runInstallation() {
 	installHomebrewPackage("thefuck")
 
 	copyTemplateFiles(templateFiles, path.Join(formValues.homeDir, ".dreitagebart"))
+	configureGit()
+	createBackupPath()
 
 	stowFile(".gitconfig", "git")
+	stowFile(".zshrc", "zsh")
+	stowFile(".p10k.zsh", "p10k")
+
+	if formValues.installNeovimAddons {
+		stowFile(".config/nvim", "nvim")
+	}
+
+	if formValues.installTmuxAddons {
+		stowFile(".tmux.conf", "tmux")
+	}
+
+	setDefaultShell()
 }
 
 func runQuestionnaire() {
@@ -152,32 +164,3 @@ func runQuestionnaire() {
 
 // 	return err == nil
 // }
-
-func stowFile(filename string, template string) {
-	var command *exec.Cmd
-
-	stowPath := path.Join(formValues.homeDir, filename)
-	templatePath := path.Join(formValues.homeDir, ".dreitagebart", template)
-
-	if fileExists(stowPath) {
-		err := os.Rename(stowPath, path.Join(formValues.backupPath, filename))
-
-		if err != nil {
-			fmt.Printf("failed to move file: %s", err)
-			os.Exit(1)
-		}
-	}
-
-	command = exec.Command("stow", templatePath, "--dotfiles")
-
-	err := spinner.New().Type(spinner.MiniDot).ActionWithErr(func(context.Context) error {
-		_, err := command.CombinedOutput()
-
-		return err
-	}).Run()
-
-	if err != nil {
-		fmt.Println(red(fmt.Sprintf("Failed to stow %s", filename)))
-		os.Exit(1)
-	}
-}

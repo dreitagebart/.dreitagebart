@@ -66,6 +66,12 @@ Understand that this is probably the first bash script I have ever made. I'm not
 I know that settings are very opinionated and branded. But hey, that's open source. You can fork the repository, customize it to your taste or simply leave it as it is.
 I hope that it will help you or simply be useful in everyday life.
 
+# Tell something about the features
+c => clear
+up => cd ..
+
+# Add info about Meslo LG Nerdfont
+
 # Thanks to...
 
 - Jake Wiesler, who got the ball rolling for me on the topic of .dotfiles - [github](https://github.com/jakewies/.dotfiles) / [youtube](https://www.youtube.com/watch?v=70YMTHAZyy4)

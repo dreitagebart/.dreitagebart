@@ -1,11 +1,12 @@
 module dreitagebart/dotfiles-installer
 
-go 1.23.5
+go 1.23
 
 require (
 	github.com/charmbracelet/huh v0.6.0
 	github.com/charmbracelet/huh/spinner v0.0.0-20250213143221-71c9d72e6770
 	github.com/fatih/color v1.18.0
+	gopkg.in/ini.v1 v1.67.0
 )
 
 require (
@@ -30,6 +31,7 @@ require (
 	github.com/muesli/cancelreader v0.2.2 // indirect
 	github.com/muesli/termenv v0.15.3-0.20240618155329-98d742f6907a // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
+	github.com/stretchr/testify v1.10.0 // indirect
 	golang.org/x/sync v0.11.0 // indirect
 	golang.org/x/sys v0.30.0 // indirect
 	golang.org/x/text v0.18.0 // indirect

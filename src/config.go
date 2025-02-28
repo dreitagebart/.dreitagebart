@@ -6,7 +6,7 @@ import (
 	"github.com/fatih/color"
 )
 
-//go:embed git nvim p10k tmux zsh
+//go:embed git nvim/.config p10k tmux zsh
 var templateFiles embed.FS
 
 var (

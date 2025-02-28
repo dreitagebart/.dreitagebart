@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"embed"
 	"fmt"
@@ -24,6 +25,29 @@ func isPackageInstalled(packageName string) bool {
 	_, err := command.CombinedOutput()
 
 	return err == nil
+}
+
+func isCaskInstalled(caskName string) (bool, error) {
+	cmd := exec.Command("brew", "list", "--casks")
+
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	err := cmd.Run()
+
+	if err != nil {
+		return false, fmt.Errorf("failed to run brew list --casks: %w", err)
+	}
+
+	output := out.String()
+	lines := strings.Split(output, "\n")
+
+	for _, line := range lines {
+		if strings.TrimSpace(line) == caskName {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
 
 func setDefaultShell() {
@@ -222,9 +246,20 @@ func installHomebrew() {
 }
 
 func installHomebrewFont(fontName string) {
+	isInstalled, err := isCaskInstalled(fontName)
+
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+
+	if isInstalled {
+		return
+	}
+
 	command := exec.Command("brew", "install", "--cask", fontName)
 
-	err := spinner.New().
+	err = spinner.New().
 		Type(spinner.MiniDot).
 		Title(" Installing font " + fontName + "...").
 		ActionWithErr(func(context.Context) error {

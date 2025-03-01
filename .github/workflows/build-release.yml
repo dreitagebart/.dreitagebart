@@ -26,11 +26,14 @@ jobs:
 
       - name: Upload binary to release
         uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ github.event.release.upload_url }}
           asset_path: ./dotfiles-installer-linux-${{ matrix.goarch }}
           asset_name: dotfiles-installer-linux-${{ matrix.goarch }}
           asset_content_type: application/octet-stream
+          # token: ${{ secrets.GITHUB_TOKEN }}
 
   release:
     runs-on: ubuntu-latest

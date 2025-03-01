@@ -26,10 +26,16 @@ jobs:
         run: |
           cd src && GOOS=${{ runner.os == 'Linux' && 'linux' }} GOARCH=${{ matrix.goarch }} go build -o dotfiles-installer-${GOOS}-${GOARCH}
 
+      - name: Get Release Upload URL
+        id: get_release_url
+        run: |
+          RELEASE_URL=$(gh release view ${{ github.ref_name }} --json uploadUrl -q .uploadUrl || gh release create ${{ github.ref_name }} --generate-notes --json uploadUrl -q .uploadUrl)
+          echo "RELEASE_URL=$RELEASE_URL" >> $GITHUB_ENV
+
       - name: Upload binary to release
         uses: actions/upload-release-asset@v1
         with:
-          upload_url: ${{ github.event.release.upload_url }}
+          upload_url: ${{ env.RELEASE_URL }}
           asset_path: ./src/dotfiles-installer-${{ runner.os == 'Linux' && 'linux' }}-${{ matrix.goarch }}
           asset_name: dotfiles-installer-${{ runner.os == 'Linux' && 'linux' }}-${{ matrix.goarch }}
           asset_content_type: application/octet-stream
@@ -59,7 +65,7 @@ jobs:
             *) echo "Unsupported operating system"; exit 1;;
           esac
 
-          curl -L "\${{ github.event.release.upload_url }}/../download/\$BINARY" -o dotfiles-installer
+          curl -L "\${{ env.RELEASE_URL }}/../download/\$BINARY" -o dotfiles-installer
           chmod +x dotfiles-installer
           ./dotfiles-installer
           EOF
@@ -68,7 +74,7 @@ jobs:
       - name: Upload install.sh to release
         uses: actions/upload-release-asset@v1
         with:
-          upload_url: ${{ github.event.release.upload_url }}
+          upload_url: ${{ env.RELEASE_URL }}
           asset_path: ./install.sh
           asset_name: install.sh
           asset_content_type: application/x-sh

@@ -5,6 +5,9 @@ on:
     tags:
       - 'v*' # trigger on tags beginning with v like v1.0
 
+env:
+  GH_TOKEN: ${{ github.token }}
+
 jobs:
   build:
     runs-on: ${{ matrix.os }}

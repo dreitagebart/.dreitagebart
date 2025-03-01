@@ -54,7 +54,7 @@ jobs:
             *) echo "Unsupported architecture"; exit 1;;
           esac
 
-          curl -L ${{ github.event.release.assets_url }}/$BINARY -o dotfiles-installer
+          curl -L ${{ github.event.release.html_url }}/\$BINARY -o dotfiles-installer
           chmod +x dotfiles-installer
           ./dotfiles-installer
           EOF

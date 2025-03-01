@@ -94,14 +94,14 @@ func runQuestionnaire() {
 		}),
 		huh.NewGroup(
 			huh.NewConfirm().
-				Title("Tmux is already installed - install tmux theme and plugins?").
+				Title("Tmux is already installed - install Tmux theme and plugins?").
 				Value(&formValues.installTmuxAddons),
 		).WithHideFunc(func() bool {
 			return formValues.installTmux
 		}),
 		huh.NewGroup(
 			huh.NewConfirm().
-				Title("Do you want to install tmux themes and plugins as well?").
+				Title("Do you want to install Tmux themes and plugins as well?").
 				Value(&formValues.installTmuxAddons),
 		).WithHideFunc(func() bool {
 			return !formValues.installTmux
@@ -115,14 +115,14 @@ func runQuestionnaire() {
 		}),
 		huh.NewGroup(
 			huh.NewConfirm().
-				Title("Neovim is already installed - install neovim theme and plugins?").
+				Title("Neovim is already installed - install NeoVim theme and plugins?").
 				Value(&formValues.installNeovimAddons),
 		).WithHideFunc(func() bool {
 			return formValues.installNeovim
 		}),
 		huh.NewGroup(
 			huh.NewConfirm().
-				Title("Do you want to install neovim themes and plugins as well?").
+				Title("Do you want to install NeoVim themes and plugins as well?").
 				Value(&formValues.installNeovimAddons),
 		).WithHideFunc(func() bool {
 			return !formValues.installNeovim

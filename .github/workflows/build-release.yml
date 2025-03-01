@@ -41,7 +41,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Create bash install script install.sh
+      - name: Create install.sh
         run: |
           cat <<EOF > install.sh
           #!/bin/bash

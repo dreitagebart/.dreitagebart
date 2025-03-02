@@ -56,14 +56,14 @@ func setDefaultShell() {
 	user := os.Getenv("USER")
 
 	if user == "" {
-		fmt.Println(red(fmt.Printf("USER environment variable not set")))
+		fmt.Println(red("USER environment variable not set"))
 		return
 	}
 
 	zshPath, err := exec.LookPath("zsh")
 
 	if err != nil {
-		fmt.Println(red(fmt.Sprintf("Failed to lookup zsh file path: %v", err)))
+		fmt.Println(red("Failed to lookup zsh file path: %v", err))
 		return
 	}
 
@@ -74,11 +74,11 @@ func setDefaultShell() {
 	err = command.Run()
 
 	if err != nil {
-		fmt.Println(red(fmt.Sprintf("Failed to set default shell: %v", err)))
+		fmt.Println(red("Failed to set default shell: %v", err))
 		return
 	}
 
-	fmt.Println("ZSH is now your default shell")
+	fmt.Println(green("zsh is now your default shell"))
 }
 
 func createBackupPath() {
@@ -117,7 +117,7 @@ func configureGit() {
 	cfg, err := ini.Load(gitConfigPath)
 
 	if err != nil {
-		fmt.Println("Could not configure .gitconfig file")
+		fmt.Println(red("Could not configure .gitconfig file"))
 		os.Exit(1)
 	}
 
@@ -126,7 +126,7 @@ func configureGit() {
 		gitUserSection, err = cfg.NewSection("user")
 
 		if err != nil {
-			fmt.Println("Error creating user section: ", err)
+			fmt.Println(red("Error creating user section: %v", err))
 			return
 		}
 	}
@@ -136,7 +136,7 @@ func configureGit() {
 
 	err = cfg.SaveTo(gitConfigPath)
 	if err != nil {
-		fmt.Println("Error saving .gitconfig:", err)
+		fmt.Println(red("Error saving .gitconfig: %v", err))
 		return
 	}
 }
@@ -185,26 +185,7 @@ func detectOS() {
 	}
 }
 
-// func installNixInstaller() {
-// 	var command *exec.Cmd
-
-// 	command = exec.Command("sh <(curl -L https://nixos.org/nix/install) --daemon")
-
-// 	err := spinner.New().Type(spinner.MiniDot).ActionWithErr(func(context.Context) error {
-// 		_, err := command.CombinedOutput()
-
-// 		return err
-// 	}).Run()
-
-// 	if err != nil {
-// 		fmt.Println(red(fmt.Sprintf("Failed to install nix installer: %v", err)))
-// 		os.Exit(1)
-// 	}
-// }
-
 func installHomebrew() {
-	// var command *exec.Cmd
-
 	if isPackageInstalled("brew") {
 		fmt.Println(green("homebrew") + " is already installed... skipped")
 
@@ -213,7 +194,8 @@ func installHomebrew() {
 
 	cacheSudoPassword()
 
-	command := exec.Command("/bin/bash", "-c", "curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh | bash")
+	// NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+	command := exec.Command("/bin/bash", "-c", "NONINTERACTIVE=1 curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh | bash")
 
 	err := spinner.New().
 		Type(spinner.MiniDot).
@@ -224,25 +206,20 @@ func installHomebrew() {
 
 			return err
 		}).
-		Accessible(true).
 		Run()
 
 	if err != nil {
-		fmt.Println(red(fmt.Sprintf("Failed to install homebrew: %v", err)))
+		fmt.Println(red("Failed to install homebrew: %v", err))
 		os.Exit(1)
 	}
 
 	command = exec.Command("/bin/bash", "-c", "eval \"$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)\"")
 	err = command.Run()
+
 	if err != nil {
-		fmt.Println(red(fmt.Sprintf("Failed to eval homebrew: %v", err)))
+		fmt.Println(red("Failed to eval homebrew: %v", err))
 		os.Exit(1)
 	}
-
-	// if err != nil {
-	// 	fmt.Println(red(fmt.Sprintf("Failed to install homebrew: %v", err)))
-	// 	os.Exit(1)
-	// }
 }
 
 func installHomebrewFont(fontName string) {
@@ -261,7 +238,7 @@ func installHomebrewFont(fontName string) {
 
 	err = spinner.New().
 		Type(spinner.MiniDot).
-		Title(" Installing font " + fontName + "...").
+		Title(fmt.Sprintf(" Installing %s...", fontName)).
 		ActionWithErr(func(context.Context) error {
 			command.Stderr = os.Stderr
 			err := command.Run()
@@ -270,12 +247,11 @@ func installHomebrewFont(fontName string) {
 		}).Run()
 
 	if err != nil {
-		fmt.Println(red(fmt.Sprintf("Failed to install %s: %v", fontName, err)))
-
+		fmt.Println(red("Failed to install %s: %v", fontName, err))
 		os.Exit(1)
 	}
 
-	fmt.Println(green(fmt.Sprintf("Font %s installed successfully.", fontName)))
+	fmt.Println(green("Font %s installed successfully.", fontName))
 }
 
 func installHomebrewPackage(packageName string, alias ...string) {
@@ -297,10 +273,8 @@ func installHomebrewPackage(packageName string, alias ...string) {
 
 	err := spinner.New().
 		Type(spinner.MiniDot).
-		Title(" Installing package " + packageName + "...").
+		Title(fmt.Sprintf(" Installing package %s...", packageName)).
 		ActionWithErr(func(context.Context) error {
-			// command.Stdin = os.Stdin
-			// command.Stdout = os.Stdout
 			command.Stderr = os.Stderr
 			err := command.Run()
 
@@ -308,12 +282,11 @@ func installHomebrewPackage(packageName string, alias ...string) {
 		}).Run()
 
 	if err != nil {
-		fmt.Println(red(fmt.Sprintf("Failed to install %s: %v", packageName, err)))
-
+		fmt.Println(red("Failed to install %s: %v", packageName, err))
 		os.Exit(1)
 	}
 
-	fmt.Println(green(fmt.Sprintf("%s installed successfully.", packageName)))
+	fmt.Println(green("%s installed successfully.", packageName))
 }
 
 func installNativePackage(packageName string, alias ...string) {
@@ -334,56 +307,33 @@ func installNativePackage(packageName string, alias ...string) {
 
 	cacheSudoPassword()
 
-	// command = exec.Command("/bin/bash", "-c", "sudo echo \"\"")
-	// command.Stdin = os.Stdin
-	// command.Stdout = os.Stdout
-	// command.Stderr = os.Stderr
-	// err := command.Run()
-
-	// if err != nil {
-	// 	fmt.Println(red(fmt.Sprintf("%v", err)))
-	// 	os.Exit(1)
-	// }
-
 	switch formValues.packageManager {
 	case "apt":
 		command = exec.Command("sudo", "apt", "install", "-y", packageName)
 	case "dnf":
-		// command = exec.Command("sudo", "dnf", "install", "-y", packageName)
-
-		command = exec.Command("/bin/bash", "-c", "sudo dnf install -y "+packageName)
+		command = exec.Command("sudo", "dnf", "install", "-y", packageName)
 	case "pacman":
 		command = exec.Command("sudo", "pacman", "-Suy", packageName)
 	}
 
-	// command.Stdin = os.Stdin
-	// command.Stdout = os.Stdout
-	// command.Stderr = os.Stderr
-	// err := command.Run()
-
-	// return err
-
 	err := spinner.New().
 		Type(spinner.MiniDot).
-		Title(" Installing package " + packageName + "...").
+		Title(fmt.Sprintf(" Installing package %s...", packageName)).
 		ActionWithErr(func(context.Context) error {
-			// command.Stdin = os.Stdin
-			// command.Stdout = os.Stdout
 			command.Stderr = os.Stderr
 			err := command.Run()
 
 			return err
 		}).
-		// Accessible(true).
 		Run()
 
 	if err != nil {
-		fmt.Println(red(fmt.Sprintf("Failed to install %s: %v", packageName, err)))
+		fmt.Println(red("Failed to install %s: %v", packageName, err))
 
 		os.Exit(1)
 	}
 
-	fmt.Println(green(fmt.Sprintf("%s installed successfully.", packageName)))
+	fmt.Println(green("%s installed successfully.", packageName))
 }
 
 func cacheSudoPassword() {
@@ -391,7 +341,7 @@ func cacheSudoPassword() {
 	err := command.Run()
 
 	if err != nil {
-		fmt.Println(red(fmt.Sprintf("%v", err)))
+		fmt.Println(red("%v", err))
 		os.Exit(1)
 	}
 }
@@ -451,11 +401,11 @@ func moveFolderIfExists(sourcePath, destinationPath string) {
 
 	if err != nil {
 		if os.IsNotExist(err) {
-			fmt.Sprintln("source path does not exist: %w", err)
+			fmt.Println(red("source path does not exist: %w", err))
 			return
 		}
 
-		fmt.Sprintln("failed to stat source path: %w", err)
+		fmt.Println(red("failed to stat source path: %w", err))
 		return
 	}
 
@@ -463,7 +413,7 @@ func moveFolderIfExists(sourcePath, destinationPath string) {
 		err = os.Rename(sourcePath, destinationPath)
 
 		if err != nil {
-			fmt.Sprintln("failed to move symlink: %w", err)
+			// fmt.Println(red("failed to move symlink: %w", err))
 			return
 		}
 
@@ -471,7 +421,7 @@ func moveFolderIfExists(sourcePath, destinationPath string) {
 	}
 
 	if !fileInfo.IsDir() {
-		fmt.Sprintln("source path is not a directory")
+		fmt.Println(red("source path is not a directory"))
 		return
 	}
 
@@ -480,14 +430,14 @@ func moveFolderIfExists(sourcePath, destinationPath string) {
 	if _, err := os.Stat(destDir); os.IsNotExist(err) {
 		err := os.MkdirAll(destDir, 0755)
 		if err != nil {
-			fmt.Sprintln("failed to create destination directory: %w", err)
+			fmt.Println(red("failed to create destination directory: %w", err))
 			return
 		}
 	}
 
 	err = os.Rename(sourcePath, destinationPath)
 	if err != nil {
-		fmt.Sprintln("failed to move folder: %w", err)
+		fmt.Println(red("failed to move folder: %w", err))
 		return
 	}
 
@@ -504,7 +454,7 @@ func stowFile(filename string, template string) {
 		fileInfo, err := os.Stat(stowPath)
 
 		if err != nil {
-			fmt.Printf("Could not read fileinfo: %s", err)
+			fmt.Println(red("Could not read fileinfo: %s", err))
 			os.Exit(1)
 		}
 
@@ -514,7 +464,7 @@ func stowFile(filename string, template string) {
 			err = os.Rename(stowPath, path.Join(formValues.backupPath, filename))
 
 			if err != nil {
-				fmt.Printf("failed to move file: %s", err)
+				fmt.Println(red("failed to move file: %s", err))
 				os.Exit(1)
 			}
 		}
@@ -529,7 +479,7 @@ func stowFile(filename string, template string) {
 	}).Run()
 
 	if err != nil {
-		fmt.Println(red(fmt.Sprintf("Failed to stow %s", filename)))
+		fmt.Println(red("Failed to stow %s", filename))
 		os.Exit(1)
 	}
 }

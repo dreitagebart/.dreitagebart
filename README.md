@@ -1,3 +1,7 @@
+# Installation
+
+> curl -fsSL https://github.com/dreitagebart/.dreitagebart/releases/latest/download/install.sh | bash
+
 # My personal dotfiles
 
 This directory contains the dotfiles i use for my daily work.

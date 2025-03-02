@@ -10,8 +10,8 @@ import (
 var templateFiles embed.FS
 
 var (
-	red   = color.New(color.FgRed).SprintFunc()
-	green = color.New(color.FgGreen).SprintFunc()
+	red   = color.New(color.FgRed).SprintfFunc()
+	green = color.New(color.FgGreen).SprintfFunc()
 	// cyan   = color.New(color.FgCyan).SprintFunc()
 	// blue   = color.New(color.FgBlue).SprintFunc()
 	// yellow = color.New(color.FgYellow).SprintFunc()

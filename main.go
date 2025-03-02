@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"path"
@@ -65,9 +66,9 @@ func runQuestionnaire() {
 	form := huh.NewForm(
 		huh.NewGroup(
 			huh.NewNote().
-				Title("It seems that you are using "+formValues.osName+" as your linux distribution"),
+				Title(fmt.Sprintf("It seems that you are using %s as your linux distribution", formValues.osName)),
 			huh.NewSelect[string]().
-				Title("I will use "+formValues.packageManager+" for installing your software packages. Is this okay?").
+				Title(fmt.Sprintf("I will use %s for installing your software packages. Is this okay?", formValues.packageManager)).
 				Options(
 					huh.NewOption("apt", "apt"),
 					huh.NewOption("dnf", "dnf"),
@@ -87,35 +88,35 @@ func runQuestionnaire() {
 		),
 		huh.NewGroup(
 			huh.NewConfirm().
-				Title("Do you want to install Tmux?").
+				Title("Do you want to install tmux?").
 				Value(&formValues.installTmux),
 		).WithHideFunc(func() bool {
 			return !formValues.installTmux
 		}),
 		huh.NewGroup(
 			huh.NewConfirm().
-				Title("Tmux is already installed - install Tmux theme and plugins?").
+				Title("tmux is already installed - install tmux theme and plugins?").
 				Value(&formValues.installTmuxAddons),
 		).WithHideFunc(func() bool {
 			return formValues.installTmux
 		}),
 		huh.NewGroup(
 			huh.NewConfirm().
-				Title("Do you want to install Tmux themes and plugins as well?").
+				Title("Do you want to install tmux themes and plugins as well?").
 				Value(&formValues.installTmuxAddons),
 		).WithHideFunc(func() bool {
 			return !formValues.installTmux
 		}),
 		huh.NewGroup(
 			huh.NewConfirm().
-				Title("Do you want to install NeoVim?").
+				Title("Do you want to install neovim?").
 				Value(&formValues.installNeovim),
 		).WithHideFunc(func() bool {
 			return !formValues.installNeovim
 		}),
 		huh.NewGroup(
 			huh.NewConfirm().
-				Title("Neovim is already installed - install NeoVim theme and plugins?").
+				Title("neovim is already installed - install neovim theme and plugins?").
 				Value(&formValues.installNeovimAddons),
 		).WithHideFunc(func() bool {
 			return formValues.installNeovim
@@ -127,20 +128,6 @@ func runQuestionnaire() {
 		).WithHideFunc(func() bool {
 			return !formValues.installNeovim
 		}),
-
-		// huh.NewGroup(
-		// 	huh.NewConfirm().
-		// 		TitleFunc(func() string {
-		// 			if isNeovimInstalled {
-		// 				return "Neovim is already installed - install neovim theme and plugins?"
-		// 			}
-
-		// 			return "Do you want to install neovim themes and plugins as well?"
-		// 		}, &isNeovimInstalled).
-		// 		Value(&formValues.installNeovimAddons),
-		// ).WithHideFunc(func() bool {
-		// 	return !formValues.installNeovim
-		// }),
 		huh.NewGroup(
 			huh.NewConfirm().
 				Title("Are you sure you want to run the installer?").
@@ -158,9 +145,3 @@ func runQuestionnaire() {
 		os.Exit(0)
 	}
 }
-
-// func isValidEmail(email string) bool {
-// 	_, err := mail.ParseAddress(email)
-
-// 	return err == nil
-// }

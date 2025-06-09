@@ -49,6 +49,9 @@ bindkey '^k' history-search-forward # ctrl + k
 bindkey '^ ' autosuggest-accept # ctrl + space
 bindkey '^w' autosuggest-clear # ctrl + w
 bindkey '^[ ' kill-region # escape + space
+bindkey '^[[3~' delete-char
+bindkey '^[OH' beginning-of-line
+bindkey '^[OF' end-of-line
 
 zle_highlight+=(paste:none)
 
